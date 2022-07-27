@@ -184,6 +184,18 @@ ______    _____   _____     ___    ___      __      __
 #include "AudioGeneratorAAC.h"
 #include <AudioGeneratorFLAC.h>
 
+//=====Matrix-display-imports-16x8 panel=====
+#include <Adafruit_GFX.h>
+#include <TM1640.h>
+#include <TM16xxMatrixGFX.h>
+TM1640 module(21,19) ;
+// TM1640 module(21,22) ; to avoid conflict with GPIO 22
+//TM1640 module(5,18);
+#define MATRIX_NUMCOLUMNS 16
+#define MATRIX_NUMROWS 8
+TM16xxMatrixGFX matrix(&module, MATRIX_NUMCOLUMNS, MATRIX_NUMROWS); 
+//============================================
+
 // #ifdef USE_NO_DAC
     #include "AudioOutputI2SNoDAC.h"
 // #else
@@ -738,10 +750,16 @@ void onMqttMessage(char *topic, byte *payload, unsigned int mlength)
       {
         sam->Say(out, newMsg);
         Serial.print(soundOutputValue);
+        //===========display after talk ===========
+        scrollMessage(newMsg ,80);
+        //===========================================
         
       }else{
         sam->Say(outNoDac, newMsg); 
         Serial.print(soundOutputValue);
+        //===========display after talk ===========
+        scrollMessage(newMsg ,80);
+        //===========================================
       }
       
       
@@ -1046,6 +1064,12 @@ void configSaved()
 void setup()
 {
 
+//// *******************  setup matrix *************************************//
+  matrix.setRotation(3);
+  matrix.setMirror(false, true);
+  matrix.setTextWrap(false);
+//// *******************  setup matrix end*********************************//
+
 #ifdef DEBUG_FLAG
   Serial.begin(115200);
 #endif
@@ -1158,6 +1182,12 @@ void loop()
   if (iotWebConf.getState() == iotwebconf::OnLine){
   mqttReconnect();
   mqttClient.loop();
+   
+    //===========================================
+   // String fin_Message;
+   // fin_Message="yes working blue 8x16";
+   // scrollMessage(fin_Message,80);
+    //===========================================
   }
   if (!mp3)
     iotWebConf.doLoop(); // give processor priority to web server
@@ -1225,3 +1255,20 @@ if (ButtonsDatas[0].CurrentButtonstate == 1 || ButtonsDatas[0].CurrentButtonstat
 if (ButtonsDatas[1].CurrentButtonstate == 1 || ButtonsDatas[1].CurrentButtonstate == 8) SetVolume("+",false);
 
 }
+
+/**********************Matrix scrolling end *******************************/
+
+void scrollMessage(String mx_message, int rate) {
+  
+  int cursor_pos = 16;
+  for(int i = 0; i < 22 + (mx_message.length()+1) * 5; i++) {
+    matrix.fillScreen(0);
+    matrix.setCursor(cursor_pos,0);
+    matrix.print((String)mx_message);
+    matrix.write();
+    cursor_pos -= 1;
+    delay(rate);    
+  }
+}
+
+/**********************Matrix scrolling end *******************************/
